@@ -1,0 +1,29 @@
+## Example 1
+# If you only have one patient to check for this with a false positive frequency of 0.05, then your answer would also be 0.05 for chance of a false positive.
+# So technically just barely not statistically significant but what is it actually showing when only comparing one.
+
+## Example 2 
+import scipy.stats as st
+import numpy as np
+N = 10000                   
+false_positive_rate = 0.05 
+false_negative_rate = 0
+
+# assumming the rate of infection is 0.25:
+infected = st.binom.rvs(1, 0.25, size=N)
+
+# number of people infected
+number_infected = infected.sum()
+
+# positive test results which is simple because false negative is 0:
+positive = np.copy(infected)
+
+
+# to the false-positive rate given false positive rate is 0.05:
+positive[infected==0] = st.binom.rvs(1, false_positive_rate, size=N-number_infected)
+
+# probability that someone with a positive test is infected:
+infected_positive = (np.logical_and(infected==1, positive==1).sum())/positive.sum()
+
+#output
+print(f'The probaility that someone is infected given a positive test = {infected_positive:.4f}')
