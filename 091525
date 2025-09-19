@@ -1,0 +1,60 @@
+import numpy as np
+import pandas as pd
+import math
+import matplotlib.pyplot as plt
+from statsmodels.stats.power import TTestPower
+
+# --------------------
+# PARAMETERS
+# --------------------
+T_points = 1000   # number of timepoints per session 
+alpha = 0.05      # significance level
+power_target = 0.8
+
+# Effect sizes (true correlations r) to evaluate
+r_values = np.concatenate((
+    np.linspace(0.01, 0.1, 10),   # finer grid for small r
+    np.linspace(0.11, 0.5, 40)    # coarser grid up to r=0.5
+))
+r_values = np.round(r_values, 4)
+
+# --------------------
+# CALCULATIONS
+# --------------------
+# Standard deviation of Fisher z for one session
+sd_z = 1.0 / np.sqrt(T_points - 3)
+
+power_calc = TTestPower()
+results = []
+
+for r in r_values:
+    z = np.arctanh(r)             # Fisher z mean
+    d = z / sd_z                  # Cohen's d for one-sample t
+    try:
+        n_needed = power_calc.solve_power(
+            effect_size=d,
+            power=power_target,
+            alpha=alpha,
+            alternative='two-sided'
+        )
+        n_needed = math.ceil(n_needed)
+    except Exception:
+        n_needed = np.nan
+
+    results.append((r, z, sd_z, d, n_needed))
+
+# Put results in a DataFrame
+df = pd.DataFrame(results, columns=[
+    'Pearson r',
+    'Fisher z (mean)',
+    'SD(z) per session',
+    'Effect size d (z/sd)',
+    'N sessions needed (80% power)'
+])
+
+# --------------------
+# OUTPUT
+# --------------------
+print("\n=== ASSUMPTIONS ===")
+print(f"T = {T_points} timepoints per session")
+print(f"alpha = {alpha}, power = {power_target}")
